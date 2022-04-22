@@ -1,0 +1,510 @@
+import time
+import os
+from twilio.rest import Client
+import cv2
+import numpy as np
+import mediapipe as mp
+import sys
+
+#Étapes préliminaires pour faire fonctionner une webcam sur Python
+
+Entree = cv2.VideoCapture(0) # Activation de la webcam sur Python
+mpMains = mp.solutions.hands             #Configuration des mains à partir de MediaPipe
+mains = mpMains.Hands()                  #Creation de la classe 'mains'
+mpDrawing = mp.solutions.drawing_utils   #Permet de 'dessiner' les points d'interet et les lignes qui les connectent
+listeLettres = [False] * 28              #Liste des 26 lettres de l'alphabet + Espace + Envoi
+listeMessage = []                        #Liste des lettres qui forment le message à envoyer par téléphone
+while True:
+    success, image = Entree.read()      #Lecture de l'image
+    imageRGB = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #On converti l'image en RGB L'objet 'mains' utilise seulement des images RGB
+    information = mains.process(imageRGB)     #On retire les informations de l'image
+    hauteur, largeur, channel = image.shape  # On retire la taille de l'image
+    image = cv2.flip(image, 1)                 #Retournement de l'image pour faire un effet mirroire
+    if information.multi_hand_landmarks:
+        for mainPoints in information.multi_hand_landmarks: #On veut juste une seule main à la fois
+            listePoints = []
+            for num, points in enumerate(mainPoints.landmark): #On retire le numero des points et les coordonnées des points
+                listePoints.append(points)
+            for id in range(0, 21):
+                x, y = int(listePoints[id].x * largeur), int(listePoints[id].y * hauteur) #On veut les coordonnées en pixels
+                #CONDITIONS POUR CHACUNE DES LETTRES
+                #A
+                if listePoints[4].x > listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x\
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'A', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):  #Parcourir toute les lettres dans la liste
+                        if index == 0:                      #Si on la trouve, on continue
+                             continue
+                        listeLettres[index] = False         #Remise à 0 de toute les lettres
+                    if listeLettres[0] == False:            #Si la lettre est à 0, on l'ajoute au message
+                        print('A', end= "")
+                        listeMessage.append('a')            #On ajoute la lettre dans la liste du message à envoyer
+                        listeLettres[0] = True              #Mise à 1 de la lettre, car elle a déjà été mise dans le message
+                #B
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y < listePoints[15].y \
+                        and listePoints[20].y < listePoints[19].y:
+                    cv2.putText(image, 'B', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 1:
+                            continue
+                        listeLettres[index] = False
+                    if listeLettres[1] == False:
+                        print('B', end= "")
+                        listeMessage.append('b')
+                        listeLettres[1] = True
+                    #print('B', end='')
+                #C
+                elif listePoints[4].x > listePoints[9].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].y > listePoints[5].y \
+                        and listePoints[8].y < listePoints[5].y and listePoints[8].y > listePoints[7].y \
+                        and listePoints[12].y < listePoints[9].y and listePoints[12].y > listePoints[11].y\
+                        and listePoints[16].y < listePoints[13].y \
+                        and listePoints[20].y < listePoints[17].y:
+                    cv2.putText(image, 'C', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 2:
+                            continue
+                        listeLettres[index] = False
+                    if listeLettres[2] == False:
+                        print('C', end= "")
+                        listeMessage.append('c')
+                        listeLettres[2] = True
+                    #print('C', end='')
+                #D
+                elif listePoints[4].x < listePoints[5].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].y > listePoints[12].y \
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'D', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 3:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[3] == False:
+                            print('D', end= "")
+                            listeMessage.append('d')
+                            listeLettres[3] = True
+                    #print('D', end='')
+                #E
+                elif listePoints[4].x < listePoints[9].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].y > listePoints[20].y \
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'E', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 4:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[4] == False:
+                            print('E', end= "")
+                            listeMessage.append('e')
+                            listeLettres[4] = True
+                    #print('E', end='')
+                #F
+                elif listePoints[4].x < listePoints[3].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[8].y > listePoints[7].y \
+                        and listePoints[12].y < listePoints[10].y \
+                        and listePoints[16].y < listePoints[14].y \
+                        and listePoints[20].y < listePoints[18].y:
+                    cv2.putText(image, 'F', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 5:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[5] == False:
+                            print('F', end= "")
+                            listeMessage.append('f')
+                            listeLettres[5] = True
+                    #print('F', end='')
+                #G
+                elif listePoints[0].x < listePoints[17].x \
+                        and listePoints[8].x > listePoints[7].x and listePoints[8].x > listePoints[4].x \
+                        and listePoints[12].x < listePoints[11].x\
+                        and listePoints[16].x < listePoints[15].x\
+                        and listePoints[20].x < listePoints[19].x:
+                    cv2.putText(image, 'G', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 6:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[6] == False:
+                            print('G', end= "")
+                            listeMessage.append('g')
+                            listeLettres[6] = True
+                    #print('G', end='')
+                #H
+                elif listePoints[0].x < listePoints[17].x \
+                        and listePoints[8].x > listePoints[7].x \
+                        and listePoints[12].x > listePoints[11].x \
+                        and listePoints[16].x < listePoints[15].x \
+                        and listePoints[20].x < listePoints[19].x:
+                    cv2.putText(image, 'H', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 7:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[7] == False:
+                            print('H', end= "")
+                            listeMessage.append('h')
+                            listeLettres[7] = True
+                    #print('H', end='')
+                #I
+                elif listePoints[4].x > listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].x < listePoints[3].x\
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y < listePoints[19].y:
+                    cv2.putText(image, 'I', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 8:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[8] == False:
+                            print('I', end= "")
+                            listeMessage.append('i')
+                            listeLettres[8] = True
+                    #print('I', end='')
+                #J
+                elif listePoints[4].y < listePoints[8].y\
+                        and listePoints[20].x > listePoints[8].x:
+                    cv2.putText(image, 'J', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 9:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[9] == False:
+                            print('J', end= "")
+                            listeMessage.append('j')
+                            listeLettres[9] = True
+                    #print('J', end='')
+                #K
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[4].y < listePoints[5].y \
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'K', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 10:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[10] == False:
+                            print('K', end= "")
+                            listeMessage.append('k')
+                            listeLettres[10] = True
+                    #print('K', end='')
+                #L
+                elif listePoints[4].x > listePoints[3].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x\
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'L', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 11:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[11] == False:
+                            print('L', end= "")
+                            listeMessage.append('l')
+                            listeLettres[11] = True
+                    #print('L', end='')
+                #M
+                elif listePoints[4].x < listePoints[9].x and listePoints[4].y < listePoints[1].y and listePoints[4].y < listePoints[20].y\
+                        and listePoints[4].x < listePoints[15].x and listePoints[4].x > listePoints[18].x\
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'M', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 12:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[12] == False:
+                            print('M', end= "")
+                            listeMessage.append('m')
+                            listeLettres[12] = True
+                    #print('M', end='')
+                #N
+                elif listePoints[4].x < listePoints[10].x and listePoints[4].y < listePoints[1].y and listePoints[4].y < listePoints[15].y\
+                        and listePoints[4].x > listePoints[15].x and listePoints[4].x < listePoints[11].x \
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'N', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 13:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[13] == False:
+                            print('N', end= "")
+                            listeMessage.append('n')
+                            listeLettres[13] = True
+                    #print('N', end='')
+                #O
+                elif listePoints[4].x > listePoints[9].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].y > listePoints[16].y \
+                        and listePoints[8].y < listePoints[5].y and listePoints[8].y > listePoints[6].y \
+                        and listePoints[12].y < listePoints[9].y and listePoints[12].y > listePoints[10].y \
+                        and listePoints[16].y < listePoints[13].y \
+                        and listePoints[20].y < listePoints[17].y :
+                    cv2.putText(image, 'O', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 14:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[14] == False:
+                            print('O', end= "")
+                            listeMessage.append('o')
+                            listeLettres[14] = True
+                    #print('O', end='')
+                #P
+                elif listePoints[4].y > listePoints[1].y \
+                    and listePoints[8].y > listePoints[7].y \
+                    and listePoints[12].y > listePoints[11].y \
+                    and listePoints[16].y < listePoints[14].y \
+                    and listePoints[20].y < listePoints[18].y:
+                    cv2.putText(image, 'P', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 15:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[15] == False:
+                            print('P', end= "")
+                            listeMessage.append('p')
+                            listeLettres[15] = True
+                   # print('P', end='')
+                #Q
+                elif listePoints[4].y > listePoints[1].y \
+                    and listePoints[8].y > listePoints[7].y \
+                        and listePoints[12].y < listePoints[10].y \
+                        and listePoints[16].y < listePoints[14].y \
+                        and listePoints[20].y < listePoints[18].y:
+                    cv2.putText(image, 'Q', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 16:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[16] == False:
+                            print('Q', end= "")
+                            listeMessage.append('q')
+                            listeLettres[16] = True
+                    #print('Q', end='')
+                #R
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x\
+                        and listePoints[8].y < listePoints[7].y and listePoints[8].x < listePoints[10].x\
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'R', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 17:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[17] == False:
+                            print('R', end= "")
+                            listeMessage.append('r')
+                            listeLettres[17] = True
+                    #print('R', end='')
+                #S
+                elif listePoints[4].x > listePoints[9].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].x > listePoints[11].x and listePoints[4].x < listePoints[7].x \
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'S', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 18:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[18] == False:
+                            print('S', end= "")
+                            listeMessage.append('s')
+                            listeLettres[18] = True
+                    #print('S', end='')
+                #T
+                elif  listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].x > listePoints[11].x and listePoints[4].x < listePoints[7].x \
+                        and listePoints[8].y < listePoints[5].y and listePoints[8].y > listePoints[7].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'T', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 19:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[19] == False:
+                            print('T', end= "")
+                            listeMessage.append('t')
+                            listeLettres[19] = True
+                   # print('T', end='')
+                #U
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y < listePoints[7].y and listePoints[8].x < listePoints[1].x\
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'U', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 20:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[20] == False:
+                            print('U', end= "")
+                            listeMessage.append('u')
+                            listeLettres[20] = True
+                    #print('U', end='')
+                #V
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y < listePoints[7].y and listePoints[8].x > listePoints[1].x \
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'V', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 21:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[21] == False:
+                            print('V', end= "")
+                            listeMessage.append('v')
+                            listeLettres[21] = True
+                   # print('V', end='')
+                #W
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y < listePoints[11].y \
+                        and listePoints[16].y < listePoints[15].y \
+                        and listePoints[20].y > listePoints[17].y :
+                    cv2.putText(image, 'W', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 22:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[22] == False:
+                            print('W', end= "")
+                            listeMessage.append('w')
+                            listeLettres[22] = True
+                   # print('W', end='')
+                #X
+                elif listePoints[4].x > listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y > listePoints[7].y and listePoints[8].y < listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'X', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 23:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[23] == False:
+                            print('X', end= "")
+                            listeMessage.append('x')
+                            listeLettres[23] = True
+                   # print('X', end='')
+                #Y
+                elif listePoints[4].x > listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].x > listePoints[3].x\
+                        and listePoints[8].y > listePoints[5].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y < listePoints[19].y:
+                    cv2.putText(image, 'Y', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 24:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[24] == False:
+                            print('Y', end= "")
+                            listeMessage.append('y')
+                            listeLettres[24] = True
+                #Z
+                elif listePoints[4].x < listePoints[5].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[4].y < listePoints[11].y \
+                        and listePoints[8].y < listePoints[6].y \
+                        and listePoints[12].y > listePoints[9].y \
+                        and listePoints[16].y > listePoints[13].y \
+                        and listePoints[20].y > listePoints[17].y:
+                    cv2.putText(image, 'Z', (20, 130), cv2.FONT_HERSHEY_PLAIN, 10, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 25:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[25] == False:
+                            print('Z', end= "")
+                            listeMessage.append('z')
+                            listeLettres[25] = True
+                #Espace
+                elif listePoints[4].y > listePoints[1].y \
+                        and listePoints[4].x > listePoints[8].x \
+                        and listePoints[8].y > listePoints[7].y \
+                        and listePoints[12].y > listePoints[10].y \
+                        and listePoints[16].y > listePoints[14].y \
+                        and listePoints[20].y > listePoints[18].y:
+                    cv2.putText(image, 'Espace', (20, 130), cv2.FONT_HERSHEY_PLAIN, 5, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 26:
+                             continue
+                        listeLettres[index] = False
+                        if listeLettres[26] == False:
+                            print(' ', end= "")
+                            listeMessage.append(' ')
+                            listeLettres[26] = True
+                #Envoyer
+                elif listePoints[4].x < listePoints[6].x and listePoints[4].y < listePoints[1].y \
+                        and listePoints[0].x > listePoints[17].x \
+                        and listePoints[8].y < listePoints[7].y \
+                        and listePoints[12].y > listePoints[10].y \
+                        and listePoints[16].y > listePoints[14].y \
+                        and listePoints[20].y < listePoints[19].y:
+                    cv2.putText(image, 'Envoi', (20, 130), cv2.FONT_HERSHEY_PLAIN, 5, (255, 0, 0), 5)
+                    for index in range(len(listeLettres)):
+                        if index == 27:
+                            continue
+                        listeLettres[index] = False
+                        if listeLettres[27] == False:
+                            print('.', '\n')
+                            listeLettres[27] = True
+                            listeMessage = ''.join(listeMessage) #Puisque Twilio ne peux envoyer qu'un seul élément d'une liste,
+                                                                 #Il faut joindre toutes les lettres dans un seul élément.
+                            account_sid = "ACCOUNT"         #Information personnelle twilio
+                            auth_token = "TOKEN"            #Information personnelle teilio
+                            client = Client(account_sid, auth_token)
+                            client.messages.create(
+                                to="NUMÉRO_RÉCIPIENT",      #Mon numéro de téléphone cellulaire (récipient)
+                                from_="NUMÉRO_UTILISATEUR", #Mon numéro Twilio (Utilisateur)
+                                body=listeMessage           #Le message est envoyé
+                            )
+                            listeMessage = []
+    cv2.imshow("Test_flip", image)                          #Génération de l'image
+    if cv2.waitKey(1) == ord('p'):                          #Option de pouvoir 'delete' la dernière de la liste en cas d'erreur
+        listeMessage.pop()
+    if cv2.waitKey(1) == ord('q'):                          #Le système est arrêté si on appuie sur la touche 'Q' du clavier
+        sys.stdout.close()
+        break
+
